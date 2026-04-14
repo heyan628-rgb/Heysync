@@ -514,24 +514,25 @@
     }
 
     function loadData() {
-        const storedWords = localStorage.getItem('heysync_words');
-        if (storedWords) {
-            words = JSON.parse(storedWords);
-            words.forEach(w => { if (w.audioBase64 === undefined) w.audioBase64 = ""; });
-        } else {
-            words = JSON.parse(JSON.stringify(DEFAULT_WORDS));
-        }
-        const storedLearned = localStorage.getItem('heysync_learned');
-        learnedMap.clear();
-        if (storedLearned) {
-            const obj = JSON.parse(storedLearned);
-            for (let [k,v] of Object.entries(obj)) learnedMap.set(k,v);
-        } else {
-            words.forEach(w => learnedMap.set(w.id, false));
-        }
-        words.forEach(w => { if (!learnedMap.has(w.id)) learnedMap.set(w.id, false); });
-        applySearchAndRender();
-    }
+    fetch('heysync_xxx.json')  // 改成您上传的 json 文件名
+        .then(res => res.json())
+        .then(data => {
+            words = data.words;
+            learnedMap.clear();
+            if(data.learned) {
+                for(let [k,v] of Object.entries(data.learned)) learnedMap.set(k,v);
+            } else {
+                words.forEach(w => learnedMap.set(w.id, false));
+            }
+            applySearchAndRender();
+            persistData(); // 同时存到 localStorage 做缓存
+        })
+        .catch(err => {
+            // 如果网络加载失败，降级使用 localStorage 或默认词库
+            console.warn("加载远程词库失败，使用本地缓存", err);
+            // 这里可以保留原来的 localStorage 读取逻辑
+        });
+}
 
     function computeFiltered() {
         const kw = searchKeyword.trim().toLowerCase();
